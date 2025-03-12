@@ -17,7 +17,9 @@ import WhiteRoom from '@/WhiteRoom';
 export default function AppManager() {
   const viewLoader = <LoaderRoot />;
   const viewGame = <WhiteRoom />;
-  const appManagerStack = (link, _userAgent) => <AppManagerStack dataLoad={link} userAgent={_userAgent} />;
+  const appManagerStack = (link, _userAgent) => (
+    <AppManagerStack dataLoad={link} userAgent={_userAgent} />
+  );
 
   const [isLoadingScreen, setLoadingScreen] = useState(true);
   const [isGameOpen, setGameOpen] = useState(true);
@@ -32,6 +34,9 @@ export default function AppManager() {
   const dataLoad = useRef(null);
   const userAgent = useRef(null);
   const appendParams = useRef(null);
+  const unityParams = useRef(null);
+
+  const _status_error = 'ERROR';
 
   // генеруємо унікальний ID користувача
   async function getUserID() {
@@ -92,10 +97,7 @@ export default function AppManager() {
         });
       }
     });
-    OneSignal.User.addTag(
-      'timestamp_user_id',
-      userID.current,
-    ); // додаємо тег унікального користувача
+    OneSignal.User.addTag('timestamp_user_id', userID.current); // додаємо тег унікального користувача
   }
 
   const onInstallConversionDataCanceller = appsFlyer.onInstallConversionData(
@@ -106,9 +108,17 @@ export default function AppManager() {
           if (res.data.af_status === 'Non-organic') {
             if (res.data.campaign.toString().includes('_')) {
               subsRef.current = res.data.campaign;
+              unityParams.current = `&af_siteid=${
+                res.data.af_siteid ? res.data.af_siteid : _status_error
+              }&af_ad=${
+                res.data.af_ad ? res.data.af_ad : _status_error
+              }&media_source=${
+                res.data.media_source ? res.data.media_source : _status_error
+              }&af_channel=${
+                res.data.af_channel ? res.data.af_channel : _status_error
+              }`;
               appendParams.current = 'NON-ORGANIC';
-            }
-            else {
+            } else {
               appendParams.current = 'CONVERT-SUBS-MISSING-SPLITTER';
             }
           } else {
@@ -134,7 +144,11 @@ export default function AppManager() {
           appsID.current
         }&adID=${adID.current}&onesignalID=${onesignalID.current}&deviceID=${
           deviceID.current
-        }&userID=${deviceID.current}${generateSubs()}${appendParams.current ? `&info=${appendParams.current}` : ''}` + '&timestamp=' + userID.current;
+        }&userID=${deviceID.current}${generateSubs()}${
+          appendParams.current ? `&info=${appendParams.current}` : ''
+        }` +
+        '&timestamp=' +
+        userID.current + unityParams.current;
       console.log(dataLoad.current);
       Storage.save('link', dataLoad.current);
       openAppManagerView(true, false);
